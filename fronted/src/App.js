@@ -104,7 +104,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
     setError(''); // Limpiar errores previos
     // Simulación de lógica de login
     // En una aplicación real, aquí harías una llamada a tu API de backend
-    if (email === "test@example.com" && password === "password") {
+    if (email === "prueba@example.com" && password === "prueba") {
       console.log("Login successful for:", email);
       onLoginSuccess(); // Llama a la función pasada por props para indicar éxito
     } else {

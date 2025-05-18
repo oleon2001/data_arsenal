@@ -32,17 +32,18 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1'] # Ajusta según sea necesario para pr
 # Application definition
 
 INSTALLED_APPS = [
+    # ... otras apps de Django ...
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',  # Para manejar CORS
-    'rest_framework',  # Django REST Framework
-    'rest_framework.authtoken', # Para autenticación basada en tokens
-    'core_app', 
-    'django.contrib.postgres', 
+    'corsheaders',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'core_app',
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [
@@ -83,13 +84,14 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'your_db_name', 
-        'USER': 'your_db_user', 
-        'PASSWORD': 'your_db_password',  
-        'HOST': 'localhost',  
-        'PORT': '5432',       
+        'NAME': 'data_arsenal_db',  # Reemplaza con el nombre EXACTO de tu base de datos
+        'USER': 'data_arsenal_user',  # Reemplaza con el usuario EXACTO que creaste
+        'PASSWORD': 'ArsenalDev2025',  # Reemplaza con la contraseña EXACTA (solo ASCII)
+        'HOST': 'localhost',  # O '127.0.0.1'. Si PostgreSQL está en otra máquina, usa su IP.
+        'PORT': '5432',       # Puerto por defecto de PostgreSQL
     }
 }
+
 
 # Modelo de Usuario Personalizado
 # Apunta a tu modelo User en la aplicación 'core_app'

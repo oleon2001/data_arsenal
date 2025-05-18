@@ -84,8 +84,8 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'data_arsenal_db_v1',  # Reemplaza con el nombre EXACTO de tu base de datos
-        'USER': 'data_arsenal_user_v1',  # Reemplaza con el usuario EXACTO que creaste
+        'NAME': 'data_arsenal_v1',  # Reemplaza con el nombre EXACTO de tu base de datos
+        'USER': 'arsenal_user_v1',  # Reemplaza con el usuario EXACTO que creaste
         'PASSWORD': 'OS22122001',  # Reemplaza con la contraseña EXACTA (solo ASCII)
         'HOST': 'localhost',  # O '127.0.0.1'. Si PostgreSQL está en otra máquina, usa su IP.
         'PORT': '5432',       # Puerto por defecto de PostgreSQL

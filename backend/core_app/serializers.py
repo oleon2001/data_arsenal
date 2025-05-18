@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import (
     ServicePlan, Company, User, InvitationCode,
-    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading
+    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading,
+    Device, Data
 )
 
 class ServicePlanSerializer(serializers.ModelSerializer):
@@ -72,4 +73,74 @@ class SensorReadingSerializer(serializers.ModelSerializer):
     class Meta:
         model = SensorReading
         fields = '__all__'
+
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    """
+    Serializador para el modelo Device.
+    """
+    class Meta:
+        model = Device
+        fields = '__all__' # Incluye todos los campos del modelo Device.
+        # O puedes especificar campos: fields = ['id', 'name', 'description']
+
+
+class DataSerializer(serializers.ModelSerializer):
+    """
+    Serializador para el modelo Data.
+    Incluye campos calculados para presión, temperatura y voltaje convertidos.
+    """
+    # --- Campos calculados ---
+    presion_kpa = serializers.SerializerMethodField(help_text="Presión calculada en kilopascales (kPa).")
+    temperatura_celsius = serializers.SerializerMethodField(help_text="Temperatura calculada en grados Celsius (°C).")
+    voltaje_volts = serializers.SerializerMethodField(help_text="Voltaje calculado en Volts (V).")
+
+    # device_name = serializers.CharField(source='device.name', read_only=True)
+
+    class Meta:
+        model = Data
+        fields = [
+            'id', 
+            'device',               # ID del dispositivo asociado
+            # 'device_name',        # Descomentar para incluir el nombre del dispositivo
+            'timestamp',
+            'prefijo_id_rt',        # Prefijo para identificar la fórmula
+            'valor_crudo_psi',      # Valor crudo para presión
+            'valor_crudo_temp',     # Valor crudo para temperatura
+            'valor_crudo_volt',     # Valor crudo para voltaje
+            'presion_kpa',          # Valor de presión calculado/convertido
+            'temperatura_celsius',  # Valor de temperatura calculado/convertido
+            'voltaje_volts',        # Valor de voltaje calculado/convertido
+            'latitude', 
+            'longitude', 
+            'altitude', 
+            'speed', 
+            'course', 
+            'satellites'
+        ]
+        read_only_fields = [
+            'timestamp', # El timestamp se genera automáticamente
+            'presion_kpa',
+            'temperatura_celsius',
+            'voltaje_volts',
+        ]
+
+    def get_presion_kpa(self, obj: Data) -> float | None:
+        """
+        Obtiene el valor de presión calculado desde el método del modelo.
+        """
+        return obj.get_presion_kpa()
+
+    def get_temperatura_celsius(self, obj: Data) -> float | None:
+        """
+        Obtiene el valor de temperatura calculado desde el método del modelo.
+        """
+        return obj.get_temperatura_celsius()
+
+    def get_voltaje_volts(self, obj: Data) -> float | None:
+        """
+        Obtiene el valor de voltaje calculado desde el método del modelo.
+        """
+        return obj.get_voltaje_volts()
 

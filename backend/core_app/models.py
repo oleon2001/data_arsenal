@@ -233,17 +233,125 @@ class SensorReading(models.Model):
             models.Index(fields=['created_at']),
         ]
 
-# Nota sobre `auto_now_add=True` vs `default=timezone.now`:
-# `auto_now_add=True` establece la fecha/hora solo cuando el objeto se crea por primera vez.
-# `default=timezone.now` establece la fecha/hora al valor actual si no se proporciona uno,
-# y es más flexible para migraciones y cargas de datos.
-# `auto_now=True` actualiza la fecha/hora cada vez que se llama a `save()`.
-# Para `created_at` y `updated_at`, `default=timezone.now` es una buena opción general,
-# y puedes sobreescribir `save()` para actualizar `updated_at` si es necesario, o usar `auto_now=True` para `updated_at`.
-# He usado `default=timezone.now` para ambos para que coincida más cercanamente con el `DEFAULT now()` de SQL.
-# Si quieres que `updated_at` se actualice automáticamente en cada guardado, usa `models.DateTimeField(auto_now=True)`.
-# Para `created_at`, `models.DateTimeField(auto_now_add=True)` es más idiomático en Django.
-# He ajustado `created_at` a `auto_now_add=True` y `updated_at` a `auto_now=True` donde tiene sentido,
-# pero para los que tienen `DEFAULT now()` en SQL, `default=timezone.now` es una traducción más directa.
-# Para este caso, usaré `default=timezone.now` para `created_at` y `updated_at` para mantener la semántica del SQL.
-# Si necesitas que `updated_at` se actualice en cada `save()`, cambia a `auto_now=True`.
+# --- Constantes para los prefijos de ID de receptor para las fórmulas de presión ---
+PREFIJO_PRESION_1 = "RPS_A"  # Ejemplo para la fórmula 2.8 * psi + 87.20
+PREFIJO_PRESION_2 = "RPS_B"  # Ejemplo para la fórmula 1.572 * psi + 98.428
+PREFIJO_PRESION_3 = "RPS_C"  # Ejemplo para la fórmula 0.688 * psi + 99.312
+# Puedes añadir más prefijos si tienes más fórmulas de presión
+
+class Device(models.Model):
+    """
+    Modelo para representar un dispositivo.
+    """
+    name = models.CharField(max_length=100, verbose_name="Nombre del Dispositivo")
+    description = models.TextField(blank=True, null=True, verbose_name="Descripción")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Dispositivo"
+        verbose_name_plural = "Dispositivos"
+
+class Data(models.Model):
+    """
+    Modelo para almacenar los datos recibidos de los dispositivos,
+    incluyendo valores crudos y métodos para obtener valores procesados.
+    """
+    device = models.ForeignKey(
+        Device, 
+        on_delete=models.CASCADE, 
+        related_name='data_points', 
+        null=True, 
+        blank=True,
+        verbose_name="Dispositivo Asociado"
+    )
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Marca de Tiempo")
+    
+    prefijo_id_rt = models.CharField(
+        max_length=20, 
+        null=True, 
+        blank=True, 
+        help_text="Prefijo identificador del receptor/sensor para seleccionar la fórmula de conversión.",
+        verbose_name="Prefijo ID Receptor"
+    )
+
+    # --- Valores crudos de los sensores ---
+    valor_crudo_psi = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="Valor crudo de presión en PSI (libras por pulgada cuadrada).",
+        verbose_name="Valor Crudo Presión (PSI)"
+    )
+    valor_crudo_temp = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="Valor crudo de temperatura (unidad original del sensor).",
+        verbose_name="Valor Crudo Temperatura"
+    )
+    valor_crudo_volt = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="Valor crudo de voltaje.",
+        verbose_name="Valor Crudo Voltaje"
+    )
+
+    # --- Otros campos que ya existían ---
+    latitude = models.FloatField(null=True, blank=True, verbose_name="Latitud")
+    longitude = models.FloatField(null=True, blank=True, verbose_name="Longitud")
+    altitude = models.FloatField(null=True, blank=True, verbose_name="Altitud")
+    speed = models.FloatField(null=True, blank=True, verbose_name="Velocidad")
+    course = models.FloatField(null=True, blank=True, verbose_name="Curso")
+    satellites = models.IntegerField(null=True, blank=True, verbose_name="Satélites")
+    
+    def __str__(self):
+        device_name = self.device.name if self.device else "Dispositivo Desconocido"
+        return f"Datos de {device_name} en {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    def get_presion_kpa(self):
+        """
+        Calcula la presión en kPa basándose en el valor crudo PSI y el prefijo_id_rt.
+        Retorna el valor calculado o None si no se puede calcular.
+        """
+        if self.valor_crudo_psi is None:
+            return None
+
+        rpsi = float(self.valor_crudo_psi)
+
+        if self.prefijo_id_rt == PREFIJO_PRESION_1:
+            return (2.8 * rpsi) + 87.20
+        elif self.prefijo_id_rt == PREFIJO_PRESION_2:
+            return (1.572 * rpsi) + 98.428
+        elif self.prefijo_id_rt == PREFIJO_PRESION_3:
+            return (0.688 * rpsi) + 99.312
+        else:
+            return None
+
+    def get_temperatura_celsius(self):
+        """
+        Calcula la temperatura en °C.
+        Fórmula: {rtemp} - 55
+        Retorna el valor calculado o None si el valor crudo no está disponible.
+        """
+        if self.valor_crudo_temp is None:
+            return None
+        rtemp = float(self.valor_crudo_temp)
+        return rtemp - 55
+
+    def get_voltaje_volts(self):
+        """
+        Calcula el voltaje en V.
+        Fórmula: 0.01 * {rvolts} + 1.22
+        Retorna el valor calculado o None si el valor crudo no está disponible.
+        """
+        if self.valor_crudo_volt is None:
+            return None
+        rvolts = float(self.valor_crudo_volt)
+        return (0.01 * rvolts) + 1.22
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Dato"
+        verbose_name_plural = "Datos"

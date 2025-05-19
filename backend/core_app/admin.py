@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     ServicePlan, Company, User, InvitationCode,
-    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading
+    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading,
 )
 
 # Personalización del Admin para el modelo User (opcional pero recomendado)

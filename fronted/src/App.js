@@ -3,6 +3,7 @@
 // Maneja la navegación y la pantalla de login
 
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 // --- Iconos (ejemplos, puedes usar una librería como react-icons) ---
 const UsersIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
@@ -639,12 +640,52 @@ function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Nuevo estado para el login
 
+  // Nuevo estado para los datos, carga y error
+  const [misDatos, setMisDatos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // --- INICIO: Estado y lógica para proyectos (portafolio) ---
+  // const [projects, setProjects] = useState([]);
+  // const [projectsLoading, setProjectsLoading] = useState(true);
+  // const [projectsError, setProjectsError] = useState(null);
+
+  // useEffect(() => {
+  //   const fetchProjects = async () => {
+  //     try {
+  //       const response = await axios.get('http://localhost:8000/api/projects/');
+  //       setProjects(response.data);
+  //       setProjectsLoading(false);
+  //     } catch (err) {
+  //       setProjectsError(err.message || 'Ocurrió un error al obtener los proyectos.');
+  //       setProjectsLoading(false);
+  //     }
+  //   };
+  //   fetchProjects();
+  // }, []);
+  // --- FIN: Estado y lógica para proyectos (portafolio) ---
+
   // Simular verificación de sesión al cargar
   useEffect(() => {
     const loggedInStatus = localStorage.getItem('isLoggedInTPMS');
     if (loggedInStatus === 'true') {
       setIsLoggedIn(true);
     }
+  }, []);
+
+  // Consumir la API al montar el componente
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    axios.get('/api/misdatos/')
+      .then(response => {
+        setMisDatos(response.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Error al cargar los datos');
+        setLoading(false);
+      });
   }, []);
 
   const handleLoginSuccess = () => {
@@ -723,7 +764,42 @@ function App() {
 
       <main className="flex-1 p-6 md:p-8 overflow-y-auto">
         {renderView()}
+
+        {/* --- INICIO: Sección de Portafolio de Proyectos --- */}
+        {/*
+        <section className="mt-12">
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">Portafolio de Proyectos</h1>
+          </header>
+          {projectsLoading ? (
+            <div className="text-gray-500">Cargando proyectos...</div>
+          ) : projectsError ? (
+            <div className="text-red-500">Error al cargar los proyectos: {projectsError}</div>
+          ) : (
+            <div>
+              {projects.length > 0 ? (
+                <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {projects.map(project => (
+                    <li key={project.id} className="bg-white rounded-lg shadow p-4">
+                      <h2 className="text-lg font-semibold">{project.title}</h2>
+                      <p className="text-gray-600">{project.description}</p>
+                      <p className="text-sm text-gray-500"><strong>Tecnología:</strong> {project.technology}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Creado el: {new Date(project.created_at).toLocaleDateString()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No hay proyectos disponibles en este momento.</p>
+              )}
+            </div>
+          )}
+        </section>
+        */}
+        {/* --- FIN: Sección de Portafolio de Proyectos --- */}
       </main>
+      {/* ...existing code for API data list... */}
     </div>
   );
 }

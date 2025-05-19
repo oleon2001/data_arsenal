@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ServicePlanViewSet, CompanyViewSet, UserViewSet, InvitationCodeViewSet,
     ReceptorViewSet, SensorViewSet, VehicleViewSet, SensorAssignmentViewSet,
-    SensorReadingViewSet
+    SensorReadingViewSet,
+    misdatos_view # ProjectViewSet eliminado
 )
 
 # Crea un router y registra nuestros viewsets con él.
@@ -17,10 +18,12 @@ router.register(r'sensors', SensorViewSet, basename='sensor')
 router.register(r'vehicles', VehicleViewSet, basename='vehicle')
 router.register(r'sensor-assignments', SensorAssignmentViewSet, basename='sensorassignment')
 router.register(r'sensor-readings', SensorReadingViewSet, basename='sensorreading')
+# router.register(r'projects', ProjectViewSet, basename='project') eliminado
 
-# Las URLs de la API son determinadas automáticamente por el router.
 urlpatterns = [
     path('', include(router.urls)),
+    path('misdatos/', misdatos_view, name='misdatos'),
 ]
 # urlpatterns += [
 #     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+# ]

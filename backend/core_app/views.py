@@ -2,13 +2,15 @@ from django.shortcuts import render
 from rest_framework import viewsets, permissions
 from .models import (
     ServicePlan, Company, User, InvitationCode,
-    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading
+    Receptor, Sensor, Vehicle, SensorAssignment, SensorReading,
 )
 from .serializers import (
     ServicePlanSerializer, CompanySerializer, UserSerializer, InvitationCodeSerializer,
     ReceptorSerializer, SensorSerializer, VehicleSerializer, SensorAssignmentSerializer,
-    SensorReadingSerializer
+    SensorReadingSerializer,
 )
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 # Puedes definir permisos más granulares si es necesario.
 # Por ejemplo, IsAdminUser para ciertas acciones.
@@ -53,5 +55,14 @@ class SensorReadingViewSet(viewsets.ModelViewSet):
     queryset = SensorReading.objects.all().order_by('-created_at') # Más recientes primero
     serializer_class = SensorReadingSerializer
     # Podrías querer permisos más estrictos o filtros aquí
+
+@api_view(['GET'])
+def misdatos_view(request):
+    # Puedes devolver datos de ejemplo o consultar un modelo real
+    data = [
+        {"id": 1, "nombre": "Ejemplo 1", "descripcion": "Descripción de ejemplo 1"},
+        {"id": 2, "nombre": "Ejemplo 2", "descripcion": "Descripción de ejemplo 2"},
+    ]
+    return Response(data)
 
 # Create your views here.

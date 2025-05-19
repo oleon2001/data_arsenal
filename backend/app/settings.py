@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1'] # Ajusta según sea necesario para pr
 # Application definition
 
 INSTALLED_APPS = [
-    # ... otras apps de Django ...
+    # ...otras apps...
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # Asegúrate de que esté antes de CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',  # Antes de CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -144,22 +144,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication', # Opcional, si usas la interfaz navegable
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', # Por defecto, requiere autenticación
+        'rest_framework.permissions.AllowAny',  # Permite acceso público para pruebas
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10
 }
 
-# Configuración de CORS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  
-    "http://127.0.0.1:3000",
-]
-# CORS_ALLOW_ALL_ORIGINS = False # Ya lo tienes, es bueno.
-# CORS_ALLOW_CREDENTIALS = True # Descomenta si necesitas enviar cookies/headers de autenticación cross-origin
+# Configuración de CORS para desarrollo
+CORS_ALLOW_ALL_ORIGINS = True
+# O si prefieres restringir:
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+
+# Para desarrollo, puedes usar:
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # Opcional: Si quieres permitir métodos específicos o headers
 # CORS_ALLOW_METHODS = [

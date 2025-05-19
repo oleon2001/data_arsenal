@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth import authenticate
 from rest_framework import viewsets, permissions
 from .models import (
     ServicePlan, Company, User, InvitationCode,
@@ -11,6 +12,7 @@ from .serializers import (
 )
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
 
 # Puedes definir permisos más granulares si es necesario.
 # Por ejemplo, IsAdminUser para ciertas acciones.
@@ -58,11 +60,21 @@ class SensorReadingViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def misdatos_view(request):
-    # Puedes devolver datos de ejemplo o consultar un modelo real
+    # devolver datos de ejemplo o consultar un modelo real
     data = [
         {"id": 1, "nombre": "Ejemplo 1", "descripcion": "Descripción de ejemplo 1"},
         {"id": 2, "nombre": "Ejemplo 2", "descripcion": "Descripción de ejemplo 2"},
     ]
     return Response(data)
+
+@api_view(['POST'])
+def login_view(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+    user = authenticate(request, username=email, password=password)
+    if user is not None:
+        return Response({'success': True, 'user_id': str(user.id), 'email': user.email})
+    else:
+        return Response({'success': False, 'error': 'Correo electrónico o contraseña incorrectos.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 # Create your views here.

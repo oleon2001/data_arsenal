@@ -100,15 +100,17 @@ const LoginScreen = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Limpiar errores previos
-    // Simulación de lógica de login
-    // En una aplicación real, aquí harías una llamada a tu API de backend
-    if (email === "prueba@example.com" && password === "prueba") {
-      console.log("Login successful for:", email);
-      onLoginSuccess(); // Llama a la función pasada por props para indicar éxito
-    } else {
+    setError('');
+    try {
+      const response = await axios.post('/api/login/', { email, password });
+      if (response.data.success) {
+        onLoginSuccess();
+      } else {
+        setError("Correo electrónico o contraseña incorrectos.");
+      }
+    } catch (err) {
       setError("Correo electrónico o contraseña incorrectos.");
     }
   };

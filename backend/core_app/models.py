@@ -1,3 +1,5 @@
+# core_app/models.py
+
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -24,7 +26,9 @@ class UserManager(BaseUserManager):
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('type', User.UserType.ADMIN) # O OWNER si prefieres
+        # Asegúrate de que User.UserType.ADMIN esté definido antes de llamar a esto
+        # o pasa un valor de string directamente si es necesario durante la inicialización.
+        extra_fields.setdefault('type', 'admin') # Usando el valor string directamente
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser debe tener is_staff=True.')
@@ -36,6 +40,7 @@ class UserManager(BaseUserManager):
 # --- Modelos ---
 
 class ServicePlan(models.Model):
+    # Mapea a service_plans
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     plan_name = models.TextField() # TEXT en SQL
     cost = models.DecimalField(max_digits=10, decimal_places=2) # NUMERIC(10,2)
@@ -54,6 +59,7 @@ class ServicePlan(models.Model):
         db_table = 'service_plans' # Para coincidir con tu nombre de tabla SQL
 
 class Company(models.Model):
+    # Mapea a companies
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     company_name = models.TextField()
     rfc = models.TextField(blank=True, null=True)
@@ -80,6 +86,7 @@ class Company(models.Model):
         db_table = 'companies'
 
 class User(AbstractBaseUser, PermissionsMixin):
+    # Mapea a users
     # Para el tipo ENUM 'user_type'
     class UserType(models.TextChoices):
         OWNER = 'owner', 'Propietario'
@@ -89,7 +96,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True) # TEXT NOT NULL UNIQUE
     # La contraseña es manejada por AbstractBaseUser
-    type = models.CharField(max_length=10, choices=UserType.choices) # user_type
+    type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.STANDARD) # user_type
     name = models.TextField()
     last_name = models.TextField()
     phone = models.TextField(blank=True, null=True)
@@ -119,6 +126,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = 'users'
 
 class InvitationCode(models.Model):
+    # Mapea a invitation_codes
     code = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     company = models.ForeignKey(Company, on_delete=models.CASCADE) # NOT NULL
     created_at = models.DateTimeField(default=timezone.now)
@@ -136,6 +144,7 @@ class InvitationCode(models.Model):
         db_table = 'invitation_codes'
 
 class Receptor(models.Model):
+    # Mapea a receptors
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # MACADDR no es un tipo nativo de Django. Usamos CharField.
     # Podrías añadir un validador personalizado si es necesario.
@@ -153,6 +162,7 @@ class Receptor(models.Model):
         db_table = 'receptors'
 
 class Sensor(models.Model):
+    # Mapea a sensors
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     receptor = models.ForeignKey(Receptor, on_delete=models.CASCADE, null=True, blank=True)
     sensor_identifier = models.TextField(blank=True, null=True)
@@ -168,6 +178,7 @@ class Sensor(models.Model):
         db_table = 'sensors'
 
 class Vehicle(models.Model):
+    # Mapea a vehicles
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     alias = models.TextField(blank=True, null=True)
     brand = models.TextField(blank=True, null=True)
@@ -187,6 +198,7 @@ class Vehicle(models.Model):
         db_table = 'vehicles'
 
 class SensorAssignment(models.Model):
+    # Mapea a sensor_assignments
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sensor = models.ForeignKey(Sensor, on_delete=models.CASCADE) # NOT NULL
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE) # NOT NULL
@@ -201,9 +213,10 @@ class SensorAssignment(models.Model):
         verbose_name = "Asignación de Sensor"
         verbose_name_plural = "Asignaciones de Sensores"
         db_table = 'sensor_assignments'
-        unique_together = [['sensor_id', 'vehicle_id', 'unassigned_at']] # Para evitar múltiples asignaciones activas
+        unique_together = [['sensor', 'vehicle', 'unassigned_at']] # Corregido: usar nombres de campo
 
 class SensorReading(models.Model):
+    # Mapea a sensor_readings
     id = models.BigAutoField(primary_key=True) # BIGSERIAL
     receptor = models.ForeignKey(Receptor, on_delete=models.SET_NULL, null=True, blank=True)
     sensor = models.ForeignKey(Sensor, on_delete=models.SET_NULL, null=True, blank=True)
@@ -221,7 +234,7 @@ class SensorReading(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"Lectura {self.id} - Sensor {self.sensor_id}"
+        return f"Lectura {self.id} - Sensor {self.sensor_id if self.sensor else 'N/A'}"
 
     class Meta:
         verbose_name = "Lectura de Sensor"
@@ -240,118 +253,112 @@ PREFIJO_PRESION_3 = "RPS_C"  # Ejemplo para la fórmula 0.688 * psi + 99.312
 # Puedes añadir más prefijos si tienes más fórmulas de presión
 
 class Device(models.Model):
-    """
-    Modelo para representar un dispositivo.
-    """
-    name = models.CharField(max_length=100, verbose_name="Nombre del Dispositivo")
-    description = models.TextField(blank=True, null=True, verbose_name="Descripción")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
+    device_id = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Identificador único del dispositivo, ej: ESP32_LivingRoom_Sensor1"
+    )
+    name = models.CharField(
+        max_length=100,
+        help_text="Nombre descriptivo del dispositivo"
+    )
+    location = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Ubicación del dispositivo"
+    )
+    ip_address = models.GenericIPAddressField(
+        blank=True,
+        null=True,
+        help_text="Dirección IP actual del dispositivo (opcional)"
+    )
+    mac_address = models.CharField(
+        max_length=17,
+        blank=True,
+        null=True,
+        help_text="Dirección MAC del dispositivo (opcional)"
+    )
+    last_seen = models.DateTimeField(
+        auto_now=True,
+        help_text="Última vez que el dispositivo envió datos o se actualizó"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Indica si el dispositivo está activo y se espera que envíe datos"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.device_id})"
 
     class Meta:
+        ordering = ['name']
         verbose_name = "Dispositivo"
         verbose_name_plural = "Dispositivos"
+        # db_table = 'devices' # Opcional, Django generará core_app_device por defecto
 
-class Data(models.Model):
-    """
-    Modelo para almacenar los datos recibidos de los dispositivos,
-    incluyendo valores crudos y métodos para obtener valores procesados.
-    """
-    device = models.ForeignKey(
-        Device, 
-        on_delete=models.CASCADE, 
-        related_name='data_points', 
-        null=True, 
+class DeviceData(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey(Device, related_name='data_points', on_delete=models.CASCADE)
+
+    DATA_TYPE_CHOICES = [
+        ('temperature', 'Temperatura'),
+        ('humidity', 'Humedad'),
+        ('pressure', 'Presión Atmosférica'),
+        ('light_intensity', 'Intensidad de Luz'),
+        ('co2', 'Nivel de CO2'),
+        ('voltage', 'Voltaje'),
+        ('current', 'Corriente'),
+        ('power', 'Potencia'),
+        ('motion', 'Movimiento Detectado'),
+        ('door_status', 'Estado de Puerta'),
+        ('water_level', 'Nivel de Agua'),
+        ('generic', 'Dato Genérico'),
+    ]
+    data_type = models.CharField(
+        max_length=50,
+        choices=DATA_TYPE_CHOICES,
+        help_text="Tipo de dato medido"
+    )
+    data_value = models.FloatField(help_text="Valor numérico del dato medido")
+    unit = models.CharField(
+        max_length=20,
         blank=True,
-        verbose_name="Dispositivo Asociado"
+        null=True,
+        help_text="Unidad de medida (ej: °C, %, hPa)"
     )
-    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Marca de Tiempo")
-    
-    prefijo_id_rt = models.CharField(
-        max_length=20, 
-        null=True, 
-        blank=True, 
-        help_text="Prefijo identificador del receptor/sensor para seleccionar la fórmula de conversión.",
-        verbose_name="Prefijo ID Receptor"
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        help_text="Fecha y hora de la medición"
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    # --- Valores crudos de los sensores ---
-    valor_crudo_psi = models.FloatField(
-        null=True, 
-        blank=True, 
-        help_text="Valor crudo de presión en PSI (libras por pulgada cuadrada).",
-        verbose_name="Valor Crudo Presión (PSI)"
-    )
-    valor_crudo_temp = models.FloatField(
-        null=True, 
-        blank=True, 
-        help_text="Valor crudo de temperatura (unidad original del sensor).",
-        verbose_name="Valor Crudo Temperatura"
-    )
-    valor_crudo_volt = models.FloatField(
-        null=True, 
-        blank=True, 
-        help_text="Valor crudo de voltaje.",
-        verbose_name="Valor Crudo Voltaje"
-    )
-
-    # --- Otros campos que ya existían ---
-    latitude = models.FloatField(null=True, blank=True, verbose_name="Latitud")
-    longitude = models.FloatField(null=True, blank=True, verbose_name="Longitud")
-    altitude = models.FloatField(null=True, blank=True, verbose_name="Altitud")
-    speed = models.FloatField(null=True, blank=True, verbose_name="Velocidad")
-    course = models.FloatField(null=True, blank=True, verbose_name="Curso")
-    satellites = models.IntegerField(null=True, blank=True, verbose_name="Satélites")
-    
     def __str__(self):
-        device_name = self.device.name if self.device else "Dispositivo Desconocido"
-        return f"Datos de {device_name} en {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{self.device.name} - {self.get_data_type_display()}: {self.data_value} {self.unit or ''} @ {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
-    def get_presion_kpa(self):
-        """
-        Calcula la presión en kPa basándose en el valor crudo PSI y el prefijo_id_rt.
-        Retorna el valor calculado o None si no se puede calcular.
-        """
-        if self.valor_crudo_psi is None:
-            return None
-
-        rpsi = float(self.valor_crudo_psi)
-
-        if self.prefijo_id_rt == PREFIJO_PRESION_1:
-            return (2.8 * rpsi) + 87.20
-        elif self.prefijo_id_rt == PREFIJO_PRESION_2:
-            return (1.572 * rpsi) + 98.428
-        elif self.prefijo_id_rt == PREFIJO_PRESION_3:
-            return (0.688 * rpsi) + 99.312
-        else:
-            return None
-
-    def get_temperatura_celsius(self):
-        """
-        Calcula la temperatura en °C.
-        Fórmula: {rtemp} - 55
-        Retorna el valor calculado o None si el valor crudo no está disponible.
-        """
-        if self.valor_crudo_temp is None:
-            return None
-        rtemp = float(self.valor_crudo_temp)
-        return rtemp - 55
-
-    def get_voltaje_volts(self):
-        """
-        Calcula el voltaje en V.
-        Fórmula: 0.01 * {rvolts} + 1.22
-        Retorna el valor calculado o None si el valor crudo no está disponible.
-        """
-        if self.valor_crudo_volt is None:
-            return None
-        rvolts = float(self.valor_crudo_volt)
-        return (0.01 * rvolts) + 1.22
+    def get_unit_display(self):
+        if self.unit:
+            return self.unit
+        default_units = {
+            'temperature': '°C',
+            'humidity': '%',
+            'pressure': 'hPa',
+            'light_intensity': 'lux',
+            'co2': 'ppm',
+            'voltage': 'V',
+            'current': 'A',
+            'power': 'W',
+            'water_level': 'cm',
+        }
+        return default_units.get(self.data_type, '')
 
     class Meta:
         ordering = ['-timestamp']
-        verbose_name = "Dato"
-        verbose_name_plural = "Datos"
+        verbose_name = "Dato de Dispositivo"
+        verbose_name_plural = "Datos de Dispositivos"
+        # db_table = 'device_data' # Opcional
+        indexes = [
+            models.Index(fields=['device', 'data_type', '-timestamp']),
+        ]

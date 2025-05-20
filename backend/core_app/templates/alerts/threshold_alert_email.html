@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #d9534f; /* Rojo para alertas */
+            color: white;
+            padding: 10px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin-bottom: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Alerta del Sistema</h1>
+        </div>
+        <div class="content">
+            <h2>{{ subject }}</h2>
+            <p>Hola,</p>
+            <p>Se ha detectado una alerta en el sistema para el dispositivo <strong>{{ device_name }}</strong> (ID: {{ device_id }}).</p>
+            <p>
+                El tipo de dato "<strong>{{ data_type_display }}</strong>" ha registrado un valor de <strong>{{ data_value }} {{ unit }}</strong>,
+                el cual está fuera del umbral configurado (Mín: {{ threshold_min }}{{ unit }}, Máx: {{ threshold_max }}{{ unit }}).
+            </p>
+            <p>
+                Fecha y hora del registro: {{ timestamp }}
+            </p>
+            <p>Por favor, revisa la situación.</p>
+        </div>
+        <div class="footer">
+            <p>Este es un mensaje automático de Data Arsenal.</p>
+        </div>
+    </div>
+</body>
+</html>

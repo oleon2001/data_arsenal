@@ -1,3 +1,9 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+django.setup()
+
 # crear_usuario para el login se crearon 2 usuarios
 from core_app.models import User
 

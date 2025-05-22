@@ -70,9 +70,9 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'data_arsenal_db'),
-        'USER': os.environ.get('DB_USER', 'default_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'default_password'),
+        'NAME': os.environ.get('DB_NAME', 'data_arsenal_v1'),
+        'USER': os.environ.get('DB_USER', 'arsenal_user_v1'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'OS22122001'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
@@ -182,3 +182,5 @@ LOGGING = {
         },
     },
 }
+
+AUTH_USER_MODEL = 'core_app.User'

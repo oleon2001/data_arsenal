@@ -1,4 +1,3 @@
-# core_app/email_utils.py
 import os
 import resend
 from django.conf import settings

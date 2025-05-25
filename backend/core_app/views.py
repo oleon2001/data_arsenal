@@ -11,7 +11,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-# from rest_framework.authtoken.models import Token as AuthToken # <--- Comentado el alias global
+from rest_framework import views
+from rest_framework.authtoken.models import Token
 
 # Local imports
 from .models import (
@@ -54,6 +55,10 @@ from .serializers import (
 )
 # from .email_utils import send_threshold_alert_email # Comentado ya que su uso depende de modelos ahora comentados
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # Vista para el registro de usuarios
 @api_view(['POST'])
@@ -74,36 +79,51 @@ def user_registration_view(request):
 
 
 # Vista para el login de usuarios
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def login_view(request):
-    """
-    Autentica a un usuario y devuelve un token si las credenciales son válidas.
-    """
-    from rest_framework.authtoken.models import Token # <--- Importación local de Token
+class LoginView(views.APIView):
+    permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
 
-    serializer = LoginSerializer(data=request.data)
-    if serializer.is_valid():
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            password = serializer.validated_data.get('password')
 
-        user = authenticate(request, email=email, password=password)
+            logger.info(f"Intento de login para el usuario: {email}")
 
-        if user is not None:
-            if user.is_active:
+            user = authenticate(request, email=email, password=password)
+
+            if user is not None:
                 login(request, user)
-                # Usar el Token importado localmente
-                token_obj, created = Token.objects.get_or_create(user=user) 
-                user_data = UserSerializer(user).data
+                logger.info(f"Login exitoso para el usuario: {email}")
+                token, created = Token.objects.get_or_create(user=user)
+                user_serializer = UserSerializer(user)
                 return Response({
-                    'token': token_obj.key,
-                    'user': user_data
+                    'token': token.key,
+                    'user': user_serializer.data,
+                    'message': 'Login exitoso'
                 }, status=status.HTTP_200_OK)
             else:
-                return Response({'error': 'Esta cuenta está inactiva.'}, status=status.HTTP_403_FORBIDDEN)
-        else:
-            return Response({'error': 'Credenciales inválidas'}, status=status.HTTP_401_UNAUTHORIZED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                logger.warning(f"Fallo de login para el usuario: {email}. Credenciales inválidas o usuario inactivo.")
+                try:
+                    from django.contrib.auth.models import User
+                    user_exists = User.objects.filter(username=email).exists()
+                    if not user_exists:
+                        logger.warning(f"El usuario '{email}' no existe.")
+                        return Response({'error': 'Credenciales inválidas.', 'detail': f"El usuario '{email}' no existe."}, status=status.HTTP_401_UNAUTHORIZED)
+                    user_obj = User.objects.get(username=email)
+                    if not user_obj.is_active:
+                        logger.warning(f"El usuario '{email}' está inactivo.")
+                        return Response({'error': 'Cuenta de usuario inactiva.', 'detail': f"La cuenta para '{email}' está inactiva."}, status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({'error': 'Credenciales inválidas.', 'detail': 'Nombre de usuario o contraseña incorrectos.'}, status=status.HTTP_401_UNAUTHORIZED)
+                except User.DoesNotExist:
+                    logger.error(f"Error inesperado al buscar el usuario '{email}' después de un fallo de autenticación.")
+                    return Response({'error': 'Error del servidor.', 'detail': 'Ocurrió un error inesperado.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                except Exception as e:
+                    logger.error(f"Excepción no manejada durante el fallo de login para '{email}': {str(e)}")
+                    return Response({'error': 'Error del servidor.', 'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.warning(f"Datos de login inválidos: {serializer.errors}")
+        return Response({'error': 'Datos inválidos.', 'detail': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])

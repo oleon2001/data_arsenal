@@ -4,7 +4,7 @@ from .views import (
     ServicePlanViewSet, CompanyViewSet, UserViewSet, InvitationCodeViewSet,
     ReceptorViewSet, SensorViewSet, VehicleViewSet, SensorAssignmentViewSet,
     SensorReadingViewSet,
-    misdatos_view, login_view # ProjectViewSet eliminado
+    misdatos_view, LoginView # Cambié login_view por LoginView
 )
 
 # Crea un router y registra nuestros viewsets con él.
@@ -22,7 +22,7 @@ router.register(r'sensor-readings', SensorReadingViewSet, basename='sensorreadin
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('login/', login_view, name='login'),
+    path('login/', LoginView.as_view(), name='login'), # Cambié login_view por LoginView.as_view()
     path('misdatos/', misdatos_view, name='misdatos'),
 ]
 # urlpatterns += [

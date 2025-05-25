@@ -27,7 +27,7 @@ const DashboardIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" 
 </svg>;
 
 const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
- <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.39.39 1.024 0 1.414l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.142.854.107 1.204l.527.738c.39.39.39 1.023 0 1.414l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.93l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 010-1.414l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.142-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.93l.15-.893z" />
+ <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.39.39 1.024 0 1.414l-.527.737c-.25.35-.272.806-.108 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.11v1.093c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.142.854.107 1.204l.527.738c.39.39.39 1.023 0 1.414l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.78.93l-.15.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 010-1.414l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.15-.893z" />
   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 </svg>;
 
@@ -96,22 +96,58 @@ const SelectField = ({ label, options, value, onChange, id }) => (
 
 // --- Pantalla de Login ---
 const LoginScreen = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+
     try {
-      const response = await axios.post('/api/login/', { email, password });
-      if (response.data.token) { // Cambia success por token
+      const response = await axios.post('http://localhost:8000/api/login/', {
+        email: username,
+        password: password,
+      });
+
+      if (response.data.token && response.data.user) {
+        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('userData', JSON.stringify(response.data.user));
         onLoginSuccess();
       } else {
-        setError("Correo electrónico o contraseña incorrectos.");
+        setError('Respuesta inesperada del servidor.');
       }
     } catch (err) {
-      setError("Correo electrónico o contraseña incorrectos.");
+      setLoading(false);
+      let errorMessage = 'Error al intentar iniciar sesión.';
+      if (err.response) {
+        if (err.response.data && err.response.data.error) {
+          errorMessage = err.response.data.error;
+          if (err.response.data.detail) {
+            if (typeof err.response.data.detail === 'string') {
+              errorMessage = `${err.response.data.error} ${err.response.data.detail}`;
+            } else if (typeof err.response.data.detail === 'object') {
+              const detailMessages = Object.values(err.response.data.detail).flat().join(' ');
+              errorMessage = `${err.response.data.error} ${detailMessages}`;
+            }
+          }
+        } else if (err.response.status === 401) {
+          errorMessage = 'Credenciales inválidas o cuenta inactiva.';
+        } else if (err.response.status === 400) {
+          errorMessage = 'Datos de solicitud inválidos. Por favor, verifica tu usuario y contraseña.';
+        } else if (err.response.status === 500) {
+          errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
+        }
+        setError(errorMessage);
+      } else if (err.request) {
+        setError('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      } else {
+        setError('Ocurrió un error al preparar la solicitud.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,23 +156,21 @@ const LoginScreen = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md">
         <Card className="bg-white shadow-2xl rounded-xl p-8">
           <div className="text-center mb-8">
-            {/* Placeholder para el logo de Arsenal */}
             <div className="bg-red-600 text-white w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl font-bold">A</span> {/* Simulación de logo */}
+              <span className="text-4xl font-bold">A</span>
             </div>
             <h2 className="text-3xl font-bold text-gray-800">Ingresar</h2>
             <p className="text-gray-500">Favor de ingresar usuario y contraseña para continuar</p>
           </div>
-
           <form onSubmit={handleSubmit}>
             <InputField
-              id="email"
-              name="email"
-              label="Correo Electrónico"
-              type="email"
-              placeholder="tu@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              name="username"
+              label="Usuario"
+              type="text"
+              placeholder="Tu usuario"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
             <InputField
               id="password"
@@ -148,8 +182,8 @@ const LoginScreen = ({ onLoginSuccess }) => {
               onChange={(e) => setPassword(e.target.value)}
             />
             {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-            <Button type="primary" fullWidth className="py-3 text-lg">
-              Ingresar
+            <Button type="primary" fullWidth className="py-3 text-lg" disabled={loading}>
+              {loading ? 'Ingresando...' : 'Ingresar'}
             </Button>
           </form>
           <div className="mt-6 text-center">
@@ -217,7 +251,7 @@ const UserInvitation = () => {
 
   const handleGenerateCode = () => {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    setInvitationCode(code);
+    setInvitationCode(code); // Idealmente, esto también llamaría a una API para guardar el código
     console.log("Código de invitación generado:", code, "para", userEmail, "del cliente", selectedClient);
   };
 

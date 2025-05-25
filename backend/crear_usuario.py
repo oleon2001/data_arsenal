@@ -6,7 +6,7 @@ django.setup()
 
 # crear_usuario para el login se crearon 2 usuarios
 from core_app.models import User
-
+ 
 email = "administrador@example.com"
 password = "administrador"
 name = "administrador"

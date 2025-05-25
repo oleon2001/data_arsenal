@@ -16,9 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include # Asegúrate de que 'include' esté importado
+from core_app.views import login_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')), # URLs de autenticación de DRF
     path('api/', include('core_app.urls')), # Incluye las URLs de tu aplicación 'core_app'
+    path('api/login/', login_view, name='login'),
 ]

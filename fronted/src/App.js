@@ -105,7 +105,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
     setError('');
     try {
       const response = await axios.post('/api/login/', { email, password });
-      if (response.data.success) {
+      if (response.data.token) { // Cambia success por token
         onLoginSuccess();
       } else {
         setError("Correo electrónico o contraseña incorrectos.");

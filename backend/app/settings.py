@@ -1,21 +1,25 @@
-# app/settings.py
+# backend/app/settings.py
 
-import os
 from pathlib import Path
+import os # Para variables de entorno
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') # Asegúrate de tener una variable de entorno para esto en producción
+# Asegúrate de que esta clave sea única y secreta en producción.
+# Puedes generar una nueva con: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-CAMBIA_ESTA_CLAVE_SECRETA_POR_UNA_NUEVA_Y_ALEATORIA')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*'] # Sé más específico en producción
+ALLOWED_HOSTS_STRING = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STRING.split(',') if host.strip()]
 
 
 # Application definition
@@ -28,8 +32,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders',
-    'core_app',
+    'rest_framework.authtoken', # Para la autenticación por token
+    'corsheaders',            # Para manejar CORS
+    'core_app',               # Tu aplicación principal
+    # ... otras apps
 ]
 
 MIDDLEWARE = [
@@ -48,7 +54,7 @@ ROOT_URLCONF = 'app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Asegúrate de que esta línea exista si tienes plantillas a nivel de proyecto
+        'DIRS': [os.path.join(BASE_DIR, 'core_app', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -67,16 +73,41 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# !!! IMPORTANTE: REVISA CUIDADOSAMENTE ESTOS VALORES !!!
+# El error UnicodeDecodeError suele ocurrir si alguno de estos valores
+# (especialmente PASSWORD, pero también NAME, USER, HOST) contiene caracteres
+# especiales (como tildes: ó, á, ñ, etc.) que no son ASCII puros.
+#
+# 1. Si usas variables de entorno (os.environ.get), verifica los valores
+#    en tu archivo .env o en la configuración de tu sistema.
+# 2. Si NO usas variables de entorno, REEMPLAZA los valores de ejemplo
+#    ('tu_basedatos', 'tu_usuario', 'tu_contraseña') con tus credenciales REALES.
+# 3. TEMPORALMENTE, para diagnosticar, intenta usar una contraseña de base de datos
+#    que SÓLO contenga letras (a-z, A-Z) y números (0-9), sin símbolos ni tildes.
+#    Si esto soluciona el UnicodeDecodeError, el problema estaba en los caracteres
+#    de tu contraseña o algún otro parámetro de conexión.
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'data_arsenal_v1'),
-        'USER': os.environ.get('DB_USER', 'arsenal_user_v1'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'OS22122001'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': 'data_arsenal_nueva',
+        'USER': 'arsenal_user_nuevo',
+        'PASSWORD': 'NuevaClave123',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
+# Para desarrollo local rápido con SQLite (si no tienes PostgreSQL configurado o para probar):
+# Descomenta las siguientes líneas y comenta la configuración de PostgreSQL de arriba.
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
@@ -97,11 +128,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Modelo de Usuario Personalizado
+AUTH_USER_MODEL = 'core_app.User'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'es-ve' # Cambiado a Español - Venezuela
+LANGUAGE_CODE = 'es-ve' # Español Venezuela como ejemplo
 
 TIME_ZONE = 'America/Caracas'
 
@@ -114,7 +148,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# STATIC_ROOT es para 'collectstatic' en producción.
+STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
+
+# STATICFILES_DIRS es para encontrar estáticos durante el desarrollo.
+# El warning (staticfiles.W004) indica que el directorio 'backend/static' no existe.
+# Crea este directorio o ajusta la ruta si tus estáticos están en otro lugar.
+STATICFILES_DIRS = [
+    BASE_DIR / "static", # Busca una carpeta 'static' en el directorio 'backend/'
+]
 
 
 # Default primary key field type
@@ -122,52 +165,59 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True # Para desarrollo, sé más restrictivo en producción
-# O puedes usar CORS_ALLOWED_ORIGINS si conoces los orígenes específicos
-# CORS_ALLOWED_ORIGINS = [
-# "http://localhost:3000", # Ejemplo para un frontend React en desarrollo
-# "http://127.0.0.1:3000",
-# ]
-
-# REST Framework Configuration
+# Configuración de Django REST framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        # Aquí puedes añadir clases de autenticación si las necesitas, ej: TokenAuthentication
-        # 'rest_framework.authentication.TokenAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny', # O sé más restrictivo según tus necesidades
-    )
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    # 'PAGE_SIZE': 10
 }
 
-# Resend Configuration
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 'YOUR_RESEND_API_KEY_HERE') # ¡MUY IMPORTANTE! Usa variables de entorno en producción.
-DEFAULT_FROM_EMAIL = 'Data Arsenal <onboarding@resend.dev>' # Cambia esto por tu email verificado en Resend
-ALERT_EMAIL_RECIPIENTS = ['tu_correo_de_alerta@example.com'] # Lista de correos para recibir alertas
+# Configuración de CORS
+# Asegúrate que los orígenes de tu frontend estén aquí.
+CORS_ALLOWED_ORIGINS_STRING = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS_STRING.split(',') if origin.strip()]
+CORS_ALLOW_CREDENTIALS = True
+# Para mayor seguridad en producción, considera usar CORS_ALLOWED_ORIGIN_REGEXES
+# o especificar los orígenes exactos en lugar de depender de un string separado por comas si es complejo.
 
-# Umbrales para datos de dispositivos
-# Puedes expandir esto según sea necesario
-DEVICE_DATA_THRESHOLDS = {
-    'temperature': {'min': 5.0, 'max': 35.0},    # Grados Celsius
-    'humidity':    {'min': 30.0, 'max': 70.0},   # Porcentaje
-    'pressure':    {'min': 950.0, 'max': 1050.0}, # hPa
-    # Ejemplo para un nuevo tipo de dato, si lo añades a DeviceData.DATA_TYPE_CHOICES
-    # 'co2':         {'min': 300, 'max': 1000},    # ppm
-}
+# Configuración de Email (usando Resend como en tu email_utils.py)
+# Asegúrate de que estas variables de entorno estén configuradas correctamente.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # O un backend personalizado si usas Resend directamente
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY') # Obtener desde el entorno
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'oswaldoleon72@example.com') # Cambia a tu email
+ALERT_EMAIL_RECIPIENTS_STRING = os.environ.get('ALERT_EMAIL_RECIPIENTS', 'alerts@example.com')
+ALERT_EMAIL_RECIPIENTS = [email.strip() for email in ALERT_EMAIL_RECIPIENTS_STRING.split(',') if email.strip()]
 
-# Logging (opcional, pero útil para depurar)
+
+# Configuración de Logging (Básico)
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': { # Añadido para un formato más detallado
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple', # Usar formato simple para la consola
         },
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO', # Cambia a DEBUG para más detalle
+        'level': 'INFO',
     },
     'loggers': {
         'django': {
@@ -175,12 +225,16 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
-        'core_app': { # Logger específico para tu app
+        'django.db.backends': { # Para ver queries SQL si es necesario
+            'handlers': ['console'],
+            'level': 'INFO', # Cambia a DEBUG para ver queries
+            'propagate': False,
+        },
+        'core_app': {
             'handlers': ['console'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,
         },
     },
 }
 
-AUTH_USER_MODEL = 'core_app.User'

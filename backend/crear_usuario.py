@@ -12,7 +12,7 @@ from core_app.models import User
 # --- Definición de los datos del usuario ---
 email = "oswaldoleon72@example.com"
 password = "prueba"
-name = "oswaldo"  # Corregido: usa name
+name = "oswaldo"  
 last_name = "leon"
 user_type = "admin"  # El campo 'type' es personalizado para tu modelo
 

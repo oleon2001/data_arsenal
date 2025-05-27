@@ -189,9 +189,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Configuración de Email (usando Resend como en tu email_utils.py)
 # Asegúrate de que estas variables de entorno estén configuradas correctamente.
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # O un backend personalizado si usas Resend directamente
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY') # Obtener desde el entorno
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'oswaldoleon72@example.com') # Cambia a tu email
-ALERT_EMAIL_RECIPIENTS_STRING = os.environ.get('ALERT_EMAIL_RECIPIENTS', 'alerts@example.com')
+RESEND_API_KEY = "re_ZNDUY3nh_Fqa2VZnwLEK5At3sRW1Z7AGm" # Obtener desde el entorno
+DEFAULT_FROM_EMAIL = "onboarding@resend.dev"
+ALERT_EMAIL_RECIPIENTS_STRING = os.environ.get('ALERT_EMAIL_RECIPIENTS', 'oswaldoleon72@gmail.com')
 ALERT_EMAIL_RECIPIENTS = [email.strip() for email in ALERT_EMAIL_RECIPIENTS_STRING.split(',') if email.strip()]
 
 
